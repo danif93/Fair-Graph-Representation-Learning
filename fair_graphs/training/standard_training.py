@@ -74,8 +74,7 @@ def optimize_gnn(graph_dataset: _GraphDataset,
     # ---- Model storing
     if store_model:
         ext = f"{graph_net.get_store_extension()}_ep_{training_epochs}_data_{graph_dataset}"
-        path = os.path.join('trained_models', 'simple_train')
-        os.makedirs(path, exist_ok=True)
-        graph_net.save_state_dict(save_path = path, name_extension = ext)
+        graph_net.save_state_dict(save_path = os.path.join('trained_models', 'simple_train'),
+                                  name_extension = ext)
     
     return res_dict

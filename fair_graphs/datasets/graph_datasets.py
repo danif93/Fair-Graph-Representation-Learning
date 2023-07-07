@@ -34,11 +34,9 @@ class _GraphDataset(data.Dataset):
         
         self.include_sensitive = include_sensitive
         self.sensitive = tr.tensor(data_dict['sensitive'])
-        self.sensitive_map = data_dict['sensitive_map']
         
         self.labels = tr.tensor(data_dict['labels'])
         self.labels_msk = tr.arange(len(self.labels))
-        self.labels_map = data_dict['labels_map']
         
         self.adj_mtx = data_dict['adjacency_matrix']
         
@@ -108,7 +106,8 @@ class BailData(_GraphDataset):
                          include_sensitive = include_sensitive,
                          num_samples = num_samples,
                          pre_scale_features = pre_scale_features)      
-        
+
+
 class CreditData(_GraphDataset):
     def __init__(self,
                  sensitive_attribute,
@@ -151,11 +150,44 @@ class PokecData(_GraphDataset):
                  include_sensitive = True,
                  num_samples = 0,
                  pre_scale_features = False,
-                 region_suffix = 'z', # 'z' or 'n'
                 ):
         file_name = f'pokec_sensitive_{sensitive_attribute}_label_{target_attribute}.pickle'
-        super().__init__(os.path.join('data', f'pokec_{region_suffix}', file_name),
-                         name = f'pokec_{region_suffix}',
+        super().__init__(os.path.join('data', 'pokec', file_name),
+                         name = 'pokec',
+                         include_sensitive = include_sensitive,
+                         num_samples = num_samples,
+                         pre_scale_features = pre_scale_features)
+
+
+class FacebookData(_GraphDataset):
+    def __init__(self,
+                 sensitive_attribute,
+                 target_attribute,
+                 *,
+                 include_sensitive = True,
+                 num_samples = 0,
+                 pre_scale_features = False,
+                ):
+        file_name = f'facebook_sensitive_{sensitive_attribute}_label_{target_attribute}.pickle'
+        super().__init__(os.path.join('data', 'facebook', file_name),
+                         name = 'facebook',
+                         include_sensitive = include_sensitive,
+                         num_samples = num_samples,
+                         pre_scale_features = pre_scale_features)
+
+
+class GooglePlusData(_GraphDataset):
+    def __init__(self,
+                 sensitive_attribute,
+                 target_attribute,
+                 *,
+                 include_sensitive = True,
+                 num_samples = 0,
+                 pre_scale_features = False,
+                ):
+        file_name = f'gplus_sensitive_{sensitive_attribute}_label_{target_attribute}.pickle'
+        super().__init__(os.path.join('data', 'gplus', file_name),
+                         name = 'gplus',
                          include_sensitive = include_sensitive,
                          num_samples = num_samples,
                          pre_scale_features = pre_scale_features)

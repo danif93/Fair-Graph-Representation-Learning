@@ -44,7 +44,14 @@ def dropout_edge(edges_indices,
                  sensitive_vect,
                  base_drop_rate,
                  highest_homo_perc = -1,
-                ):
+                ):    
+    # ----- Argument validation
+    # TODO
+    #heterophily_mask = sensitive_vect[edges_indices[0]] != sensitive_vect[edges_indices[1]]
+    #uni_hetero, count_hetero = tr.unique(heterophily_mask, return_counts=True)
+    #print(f"Initial nodes heterophily: {[f'{val}: {cnt}' for val, cnt in zip(uni_hetero, count_hetero)]}")
+    #print(f"[rateo: {round((count_hetero[1]/(count_hetero.sum())).item(),3)}]")
+    
     # ----- Standard edges dropout
     # note: we assume that the graph is directed while dropping
     #kept_mask = tr.rand(edge_index.shape[1]) >= base_drop_rate
@@ -132,6 +139,7 @@ def drop_feature(data_matrix,
     
     # it's not a drop, but a noise adding
     noisy_data = data_matrix.clone()
+    # TOCHECK -  shouldn't it be different for every column?
     noisy_data[:, drop_mask] += tr.randn(1, device = noisy_data.device)
 
     if flip_sensitive:

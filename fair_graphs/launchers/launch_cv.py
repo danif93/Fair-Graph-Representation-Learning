@@ -14,8 +14,9 @@ import pandas as pd
 from sklearn.metrics import accuracy_score, roc_auc_score
 
 # ----- Library Imports
-from fair_graphs.datasets.graph_datasets import GermanData, BailData, CreditData, PokecData
-from fair_graphs.metrics.simple_scorers import SubgroupsMetricScorer, DDPMetricScorer, CounterfactualScorer
+from fair_graphs.datasets.graph_datasets import (GermanData, BailData, CreditData,
+                                                 PokecData, FacebookData, GooglePlusData)
+from fair_graphs.metrics.scorers import SubgroupsMetricScorer, DDPMetricScorer, CounterfactualScorer
 from fair_graphs.cross_validation.method import cross_validation
 
 
@@ -30,11 +31,7 @@ def main():
     parser.add_argument('--fair_autoencoder',
                         action = 'store_true',
                         help = '')
-    parser.add_argument('--scenario',
-                        type = str,
-                        choices = ['inductive','transductive','one_node_out'],
-                        default = 'inductive',
-                        help = '')
+
     args = parser.parse_args()
 
     eval_scorers = {
@@ -68,22 +65,28 @@ def main():
     }
 
     datasets = [
+        PokecData(sensitive_attribute='region', target_attribute='marital_status_indicator',
+                  include_sensitive=True, num_samples=1000, pre_scale_features=False),
         GermanData(sensitive_attribute='Gender', target_attribute='GoodCustomer',
+                   include_sensitive=True, num_samples=1000, pre_scale_features=False),
+        CreditData(sensitive_attribute='Age', target_attribute='NoDefaultNextMonth',
                    include_sensitive=True, num_samples=1000, pre_scale_features=False),
         BailData(sensitive_attribute='WHITE', target_attribute='RECID',
                  include_sensitive=True, num_samples=1000, pre_scale_features=False),
-        CreditData(sensitive_attribute='Age', target_attribute='NoDefaultNextMonth',
-                   include_sensitive=True, num_samples=1000, pre_scale_features=False),
-        PokecData(sensitive_attribute='region', target_attribute='marital_status_indicator',
-                   include_sensitive=True, num_samples=1000, pre_scale_features=False, region_suffix='z')
-    ]
+        FacebookData(sensitive_attribute='gender', target_attribute='egocircle',
+                     include_sensitive=True, num_samples=1000, pre_scale_features=False),
+        GooglePlusData(sensitive_attribute='gender', target_attribute='egocircle',
+                       include_sensitive=True, num_samples=1000, pre_scale_features=False),
+        ]
     
     for data in datasets:
-        print(f"\nDataset {data} on scenario {args.scenario} {'with' if args.fair_autoencoder else 'without'} fairautoencoder")           
-        cross_validation(data, args.num_test_splits,
-                         eval_scorers,
-                         scenario = args.scenario,
-                         activate_fae = args.fair_autoencoder, f_lmbd='1')
+        for sett in ['inductive', 'transductive','semiinductive']:
+            print(f"\nDataset {data} on scenario {sett} {'with' if args.fair_autoencoder else 'without'} fairautoencoder")           
+            cross_validation(data, args.num_test_splits,
+                             eval_scorers,
+                             scenario = sett,
+                             activate_fae = args.fair_autoencoder,
+                             f_lmbd = '1')
 
 
 if __name__ == '__main__':

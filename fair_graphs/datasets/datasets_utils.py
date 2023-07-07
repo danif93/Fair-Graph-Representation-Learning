@@ -15,19 +15,17 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 # ----- Library Imports
-#from fair_graphs.datasets.graph_datasets import _GraphDataset # error: circular import
 
 
 def edges_coo_from_adj_matrix(adj_mtx):
     return tr.tensor(np.array(adj_mtx.nonzero()), dtype=int)
-    #return tr.stack(adj_mtx.nonzero(as_tuple=True))
 
 
 # -------------------
 # --- Splitting Utils
 # -------------------
 
-def train_test_split_graph_data(dataset,#: _GraphDataset,
+def train_test_split_graph_data(dataset,
                                 *,
                                 test_size = None,
                                 train_size = None,
@@ -79,7 +77,6 @@ def clean_store_graph_dataset(path_to_file,
                               evaluated_group = None,
                               evaluated_class = None,
                               dropped_cols = None,
-                              #one_hot_encode_categorical = False,
                               relationship_file = None,
                              ):
     """Clean, standardize and store project's graph data."""
@@ -121,10 +118,6 @@ def clean_store_graph_dataset(path_to_file,
     labels_map = {new_val: orig_val for orig_val, new_val in zip(unique_lbls, mapped_values)}
     raw_dataset[prediction_attr] = inverse_map
     
-    # ----- One-hot encode categorical variables
-    # TBD, use pd.get_dummies(...) once the column type has been set as categorical (or at least something that is not numerical)
-    #if one_hot_encode_categorical:
-    
     # ----- Retrieve features, sensitive and target attributes
     features = raw_dataset[cols.drop(sensitive_attr)].values.astype(float)
     sensitive = raw_dataset[sensitive_attr].values.astype(int)
@@ -140,7 +133,6 @@ def clean_store_graph_dataset(path_to_file,
                             shape=(features.shape[0], features.shape[0]), dtype=float)
     adj_mtx += adj_mtx.T.multiply(adj_mtx.T > adj_mtx) - adj_mtx.multiply(adj_mtx.T > adj_mtx)
     adj_mtx += sp.eye(adj_mtx.shape[0])
-    #adj_mtx = adj_mtx.toarray()
     
     # ----- Store data
     new_path_to_file = path_to_file.split('.')[0]
@@ -222,19 +214,25 @@ def plot_cum_distributions_sunburst(graphs_data):
     colors_dict = {0:{'main':'#31a354', 0:'#74c476', 1:'#006d2c'},
                    1:{'main':'#de2d26', 0:'#fc9272', 1:'#a50f15'}}
     
-    fig, axs = plt.subplots(2, len(graphs_data), figsize=(15,7), gridspec_kw = {'wspace':0, 'hspace':0})
+    aux_data = {'Bail':0,'Credit':0,'German':0,
+                'Pokec':1,'Facebook':1,'GooglePlus':1}
+    
+    fig, axs = plt.subplots(5, len(graphs_data)//2, figsize=(15,16), gridspec_kw = {'height_ratios':[1,1,.1,1,1]})
+
+    for j in range(len(graphs_data)//2):
+        axs[2,j].axis('off')
 
     for d_idx, (name, graph_data) in enumerate(graphs_data.items()):
         classes, smpls_classes = np.unique(graph_data.labels, return_counts=True)
         pos_msk, neg_msk = graph_data.labels==classes[1], graph_data.labels==classes[0]
     
         for r_idx, obj in enumerate(['samples', 'edges']):
-            if r_idx==0:
-                axs[r_idx][d_idx].set_title(name, size=13)
-
             if obj == 'samples':
-                if d_idx==0:
-                    axs[r_idx][d_idx].set_ylabel("Sensitive/class distribution", labelpad=20, size=13)
+                pos = 0
+                if d_idx%3==0 and aux_data[name]==0:
+                    axs[r_idx*2+aux_data[name]][d_idx%3].set_ylabel("Sensitive-Class distribution",
+                                                                    labelpad=25, size=20)
+                    axs[r_idx*2+aux_data[name]*2][d_idx%3].yaxis.set_label_coords(-.2,-0.05)
                 
                 groups, smpls_groups = np.unique(graph_data.sensitive, return_counts=True)
                 msk_0, msk_1 = graph_data.sensitive==groups[0], graph_data.sensitive == groups[1]
@@ -248,12 +246,15 @@ def plot_cum_distributions_sunburst(graphs_data):
                 groups = [f's={g} 'for g in groups]
                 
             else:
-                if d_idx==0:
-                    axs[r_idx][d_idx].set_ylabel("Homophily/class distribution", labelpad=20, size=13)
+                pos = 1
+                if d_idx%3==0 and aux_data[name]==0:
+                    axs[r_idx*2+1+aux_data[name]*2][d_idx%3].set_ylabel("Homophily-Class distribution",
+                                                                        labelpad=25, size=20)
+                    axs[r_idx*2+1+aux_data[name]*2][d_idx%3].yaxis.set_label_coords(-.2,-0.05)
                 groups = ['hetero','homo']
                 coo_edg = graph_data.adj_mtx.nonzero()
-                neg_coo_edg = graph_data.adj_mtx[neg_msk].nonzero(as_tuple=True)
-                pos_coo_edg = graph_data.adj_mtx[pos_msk].nonzero(as_tuple=True)
+                neg_coo_edg = graph_data.adj_mtx[neg_msk].nonzero()
+                pos_coo_edg = graph_data.adj_mtx[pos_msk].nonzero()
                 smpls_classes = [len(neg_coo_edg[0]), len(pos_coo_edg[0])]
             
                 n_tot = len(coo_edg[0])
@@ -265,31 +266,21 @@ def plot_cum_distributions_sunburst(graphs_data):
                 n_pos_0 = (graph_data.sensitive[pos_coo_edg[0]] != graph_data.sensitive[pos_coo_edg[1]]).sum()
                 n_pos_1 = (graph_data.sensitive[pos_coo_edg[0]] == graph_data.sensitive[pos_coo_edg[1]]).sum()
 
+            axs[r_idx*2+pos+aux_data[name]][d_idx%3].set_title(name, size=18)
+
             size = 0.5
-            axs[r_idx][d_idx].pie(smpls_classes, labels=[f'y={-1 if c==0 else 1}' for c in classes], labeldistance=0.2,
+            axs[r_idx*2+pos+aux_data[name]][d_idx%3].pie(smpls_classes, labels=[f'y={-1 if c==0 else 1}' for c in classes], labeldistance=0.2,
                     #autopct='%1.1f%%',
                     pctdistance=0.6, radius=1-size,
                     wedgeprops=dict(width=size, edgecolor='w'),
-                    textprops={'fontsize': 13},
+                    textprops={'fontsize': 15},
                     colors=[colors_dict[0]['main'], colors_dict[1]['main']])
             
-            axs[r_idx][d_idx].pie([n_neg_0, n_neg_1, n_pos_1, n_pos_0], labels=[groups[0], groups[1], groups[1], groups[0]],
+            axs[r_idx*2+pos+aux_data[name]][d_idx%3].pie([n_neg_0, n_neg_1, n_pos_1, n_pos_0], labels=[groups[0], groups[1], groups[1], groups[0]],
                     #autopct='%1.1f%%',
                     pctdistance=0.8, radius=1,
                     wedgeprops=dict(width=size, edgecolor='w'),
-                    textprops={'fontsize': 13},
+                    textprops={'fontsize': 15},
                     colors=[colors_dict[i][j] for i,j in [(0,0),(0,1),(1,1),(1,0)]])
-            
-            tot_dict =  {f"c{classes[0]}": n_neg, f"c{classes[1]}": n_pos,
-                        f"g{groups[0]}": n_0, f"g{groups[1]}": n_1,
-                        f"{classes[0]}{groups[0]}": n_neg_0, f"{classes[0]}{groups[1]}": n_neg_1,
-                        f"{classes[1]}{groups[0]}": n_pos_0, f"{classes[1]}{groups[1]}": n_pos_1}
     
-            #print(f"Total {obj}: {n_tot}")
-            #print("Class distribution:\n\t{}".format('\n\t'.join([f"class {c}: {tot_dict[f'c{c}']}" for c in classes])))
-            #print("Sensitive distribution:\n\t{}".format('\n\t'.join([f"group {g}: {tot_dict[f'g{g}']}" for g in groups])))
-            #print("Class-group distribution:\n\t{}".format('\n\t'.join([f"class {c}, group {g}: {tot_dict[f'{c}{g}']}"
-            #                                                        for c,g in product(classes, groups)])))
     #fig.tight_layout()
-    #fig.subplots_adjust(wspace=0, hspace=0)
-    

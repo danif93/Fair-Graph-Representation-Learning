@@ -7,8 +7,7 @@ from collections import defaultdict
 import pandas as pd
 
 # ----- Library Imports
-from fair_graphs.cross_validation.strategies import (BestDDPOnUtilityPercentile,
-                                                     SimpleBestMetricStrategy)
+from fair_graphs.cross_validation.strategies import BestDDPOnUtilityPercentile, SimpleBestMetricStrategy
 
 
 def build_multiindex(data, path):
@@ -33,17 +32,22 @@ def build_multiindex(data, path):
             new_df.loc[idx, sc] = vl
 
     new_df.to_pickle(os.path.join(path,f'{data}_simple_multi.pickle'))
-    return new_df
 
 
-def split_nifty_from_ours(data,
-                          path = "results/test_cv/"):
+def split_nifty_from_ours(data, path="results/"):
     df = pd.read_pickle(os.path.join(path, f'{data}_simple_multi.pickle'))
+
     nifty = (df['params']['highest_homo_perc'] == -1) & (df['params']['drop_criteria'] == '')
-    ours = (df['params']['highest_homo_perc'] != -1) & (df['params']['highest_homo_perc'] != 1)
     df.loc[nifty].to_pickle(os.path.join(path, f'{data}_simple_multi_nifty.pickle'))
+    ours = (df['params']['highest_homo_perc'] != -1) & (df['params']['highest_homo_perc'] != 1)
     df.loc[ours].to_pickle(os.path.join(path, f'{data}_simple_multi_ours.pickle'))
 
+    ours_dp = ours & (df['params']['drop_criteria'] == '')
+    df.loc[ours_dp].to_pickle(os.path.join(path, f'{data}_simple_multi_ours_dp.pickle'))
+    ours_eop = ours & (df['params']['drop_criteria'] == 1)
+    df.loc[ours_eop].to_pickle(os.path.join(path, f'{data}_simple_multi_ours_eop.pickle'))
+    ours_eon = ours & (df['params']['drop_criteria'] == 0)
+    df.loc[ours_eon].to_pickle(os.path.join(path, f'{data}_simple_multi_ours_eon.pickle'))
 
 
 def retrieve_best_res_from_hyperparams_df(
@@ -51,7 +55,7 @@ def retrieve_best_res_from_hyperparams_df(
         evaluation_scorers,
         file_name: str,
         selection_phase: str = 'validation',
-        file_path: str = "results/grid_search_results/cleaned",
+        file_path: str = "results/",
         verbose_selection: bool = False,
         ):
     df_res = pd.read_pickle(os.path.join(file_path, file_name))
@@ -101,36 +105,3 @@ def retrieve_best_res_from_hyperparams_df(
     file_path = os.path.join(file_path, 'selection_strategy_results')
     os.makedirs(file_path, exist_ok = True)
     pickle.dump(dict(best_results), open(os.path.join(file_path, file_name), 'wb'))
-
-
-# -----------------
-# --- Visualisation
-# -----------------
-
-def print_selection_table(full_fn,
-                          phase,
-                          selection_strategies,
-                          eval_metrics,
-                         ):
-    pd.options.display.max_colwidth = 120
-    selection_results = pickle.load(open(full_fn, 'rb'))
-    
-    table_results = pd.DataFrame(columns=eval_metrics, index=selection_strategies)
-    
-    for sel_strat, eval_res in selection_results.items():
-        if sel_strat not in selection_strategies: continue
-        
-        for eval_metr, score in eval_res.items():
-            if eval_metr != 'params':
-                metr = '_'.join(eval_metr.split('_')[2:])
-                if f"mean_{phase}" not in eval_metr or metr not in eval_metrics:
-                    continue
-                avg_score = score
-                std_score = eval_res[f"std_{phase}_{metr}"]
-                score = f"{avg_score:.3f} ± {std_score:.3f}"
-            else:
-                metr = 'params'
-                score = str(score)
-            table_results.loc[sel_strat, metr] = score
-        
-    return table_results

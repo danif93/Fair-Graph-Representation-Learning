@@ -16,7 +16,7 @@ from tqdm.auto import tqdm
 from fair_graphs.models.graph_models import SSF, Encoder, FairAutoEncoder
 from fair_graphs.datasets.graph_datasets import _GraphDataset
 from fair_graphs.datasets.scalers import MinMaxScaler
-from fair_graphs.cross_validation.cv_utils import product_dict, get_all_arguments
+from fair_graphs.cross_validation.cv_utils import product_dict, get_all_cv_arguments
 
 
 # ---------------------------
@@ -33,12 +33,12 @@ def cross_validation(data: _GraphDataset,
     # ----- argument checking
     assert isinstance(data, _GraphDataset)
     assert isinstance(cv_rounds, int) and cv_rounds > 0
-    assert isinstance(evaluation_scorers, dict)
-    assert scenario in ['inductive','transductive','one_node_out']
+    assert isinstance(evaluation_scorers, dict)# and all([])
+    assert scenario in ['inductive','transductive','semiinductive']
     assert isinstance(activate_fae, bool)
 
     # ----- initialize model fixed, cv, and fit function arguments
-    encoder_args, model_fixed_args, model_cv_args, fit_funct_args = get_all_arguments(data)
+    encoder_args, model_fixed_args, model_cv_args, fit_funct_args = get_all_cv_arguments(data)
     hyperparams_list = list(product_dict(**model_cv_args))
     
     # ----- data management
@@ -72,12 +72,12 @@ def cross_validation(data: _GraphDataset,
             if scenario == 'transductive':
                 tr_data = deepcopy(data)
                 tr_data.set_labels_mask(tr.tensor(tr_idxs, dtype=tr.int64))
-            else: # scenario in ['inductive','one_node_out']:
+            else: # scenario in ['inductive','semiinductive']:
                 tr_data = deepcopy(data).sample_data_from_indices(tr_idxs)
             tr_data.samples = data_scaler.fit_transform(tr_data.samples)
             tr_data = tr_data.to(tr_device)
 
-            # ----- initialize model (optionally load fair autoencoder)
+            # ----- initialize model (and optionally load fair autoencoder)
             enc = Encoder(**encoder_args)
             net = SSF(encoder=enc, **model_fixed_args, **hyperparams_sett)
 
@@ -146,7 +146,7 @@ def cross_validation(data: _GraphDataset,
                                'labels': tr_data.labels.cpu().numpy()[ts_idxs],
                                'sensitives': tr_data.sensitive.cpu().numpy()[ts_idxs]}
                     
-                else: # scenario == 'one_node_out'
+                else: # scenario == 'semiinductive'
                     tr_dict = {'outs': net.compute_augm_predictions(tr_data, 30, return_classes=False, counterfactual=False).cpu().numpy(),
                                'preds': net.compute_augm_predictions(tr_data, 30, return_classes=True, counterfactual=False).cpu().numpy(),
                                'count_outs': net.compute_augm_predictions(tr_data, 30, return_classes=False, counterfactual=True).cpu().numpy(),
@@ -211,8 +211,9 @@ def cross_validation(data: _GraphDataset,
                     complete_cv_results[-1][f'std_{split_name}_{score_name}']
 
     # ----- store results
-    file_path = os.path.join('results', scenario,
-                             "fd_fae" if activate_fae else "fd")
+    file_path = os.path.join('results', scenario, "fd_fae" if activate_fae else "fd")
+    if not data.include_sensitive:
+        file_path += '_sensitiveFalse'
     os.makedirs(file_path, exist_ok=True)
     pickle.dump(complete_cv_results, open(os.path.join(file_path, f'{data}_complete.pickle'), 'wb'))
     simple_cv_results.to_pickle(os.path.join(file_path, f'{data}_simple.pickle'))

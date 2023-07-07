@@ -2,7 +2,7 @@
 
 # ----- Third-Party Imports
 from torch.nn.functional import cosine_similarity
-from sklearn.metrics import accuracy_score as ACC, roc_auc_score as ROC
+from sklearn.metrics import accuracy_score, roc_auc_score
 
 # ----- Library Imports
 
@@ -31,11 +31,11 @@ def counterfactual_fairness(predictions, counterfactual_predictions):
 
 
 def accuracy(true_labels, predicted):
-    return round(ACC(true_labels, predicted), 3)
+    return round(accuracy_score(true_labels, predicted), 3)
 
 
 def roc(true_labels, probabilities):
-    return round(ROC(true_labels, probabilities), 3)
+    return round(roc_auc_score(true_labels, probabilities), 3)
 
 
 def cosine_distance(x1, x2):

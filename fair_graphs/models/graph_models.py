@@ -140,8 +140,10 @@ class FairAutoEncoder(nn.Module):
             str_ext = f'{store_str_ext}_split_idx_{split_idx}_lambda_{lambda_}_metric_{metric}'
         else:
             str_ext = f'{store_str_ext}_split_idx_{split_idx}_lambda_{lambda_}_metric_{metric}_pos{pos}'
-            
-        self.save_state_dict(save_path = db+'_feat', name_extension = str_ext)
+        
+        folder_path = os.path.join('data', 'preprocessed_features', f'{db}_feat')
+        os.makedirs(folder_path, exist_ok=True)
+        self.save_state_dict(save_path = folder_path, name_extension = str_ext)
 
         return mse, fair_loss
 
