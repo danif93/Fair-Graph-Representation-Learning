@@ -47,6 +47,7 @@ class MinMaxScaler(_BaseScaler):
         
         data_range = data_max - data_min
         self.scale = (self.feat_range[1] - self.feat_range[0]) / data_range
+        self.scale[self.scale.isinf()] = 0
         self.min = self.feat_range[0] - data_min * self.scale
         
         self.data_min = data_min

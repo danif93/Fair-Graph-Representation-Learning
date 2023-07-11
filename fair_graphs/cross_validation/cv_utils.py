@@ -1,9 +1,7 @@
 # ----- Standard Imports
-from collections import defaultdict
 import itertools
 
 # ----- Third-Party Imports
-import numpy as np
 
 # ----- Library Imports
 from fair_graphs.datasets.graph_datasets import _GraphDataset
@@ -11,8 +9,7 @@ from fair_graphs.datasets.graph_datasets import _GraphDataset
 
 def get_all_cv_arguments(data: _GraphDataset):
     encoder_args = {'in_channels': data.samples.shape[1],
-                    'out_channels': data.samples.shape[1],
-                    'base_model': 'gcn'}
+                    'out_channels': data.samples.shape[1]}
     model_fixed_args = {'num_hidden': data.samples.shape[1],
                         'num_projection_hidden': data.samples.shape[1],
                         'num_class': 1,

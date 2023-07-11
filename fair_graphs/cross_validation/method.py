@@ -13,7 +13,7 @@ import pandas as pd
 from tqdm.auto import tqdm
 
 # ----- Library Imports
-from fair_graphs.models.graph_models import SSF, Encoder, FairAutoEncoder
+from fair_graphs.models.graph_models import SSF, GCNEncoder, FairGCNAutoEncoder
 from fair_graphs.datasets.graph_datasets import _GraphDataset
 from fair_graphs.datasets.scalers import MinMaxScaler
 from fair_graphs.cross_validation.cv_utils import product_dict, get_all_cv_arguments
@@ -78,16 +78,16 @@ def cross_validation(data: _GraphDataset,
             tr_data = tr_data.to(tr_device)
 
             # ----- initialize model (and optionally load fair autoencoder)
-            enc = Encoder(**encoder_args)
+            enc = GCNEncoder(**encoder_args)
             net = SSF(encoder=enc, **model_fixed_args, **hyperparams_sett)
 
             if activate_fae and hyperparams_sett['highest_homo_perc'] != -1:
-                fn_enc = 'dp' if hyperparams_sett['drop_criteria'] is None else f"eo_pos{hyperparams_sett['drop_criteria']}"
-                fn_enc = os.path.join("data", "preprocessed_features", f'{data}_feat',
-                                      f"_fairAutoEncoder__lambda_{f_lmbd}_metric_{fn_enc}.pth")
-                f_enc = FairAutoEncoder(**encoder_args)
-                f_enc.load_state_dict(tr.load(fn_enc))
-                net.encoder = deepcopy(f_enc)
+                load_path = os.path.join("data", "preprocessed_features", f'{data}_feat')
+                name_ext = 'dp' if hyperparams_sett['drop_criteria'] is None else f"eo_pos{hyperparams_sett['drop_criteria']}"
+                name_ext = f"_split_idx_0_lambda_{f_lmbd}_metric_{name_ext}"
+                fair_enc = FairGCNAutoEncoder(**encoder_args)
+                fair_enc.load_state_dict(save_path=load_path, name_extension=name_ext, device='cpu')
+                net.encoder = deepcopy(fair_enc)
             
             # ----- fit model
             net = net.to(tr_device)
@@ -185,7 +185,6 @@ def cross_validation(data: _GraphDataset,
 
                     #del test_data
                     
-
             # ----- evaluate scorers
             for score_name, scorer in evaluation_scorers.items():
                 tr_res = scorer(tr_dict)
