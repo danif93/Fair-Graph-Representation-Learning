@@ -46,7 +46,7 @@ def cross_validation(data: _GraphDataset,
     tr_end_idx = int(num_samples * .7)
     vl_end_idx = tr_end_idx + (num_samples - tr_end_idx)//2
     data_scaler = MinMaxScaler(feature_range=(0,1))
-    tr_device = tr.device('cuda:1')
+    tr_device = tr.device('cuda:0')
     
     # ----- results management
     complete_cv_results = []
@@ -84,7 +84,7 @@ def cross_validation(data: _GraphDataset,
             if activate_fae and hyperparams_sett['highest_homo_perc'] != -1:
                 load_path = os.path.join("data", "preprocessed_features", f'{data}_feat')
                 name_ext = 'dp' if hyperparams_sett['drop_criteria'] is None else f"eo_pos{hyperparams_sett['drop_criteria']}"
-                name_ext = f"_split_idx_0_lambda_{f_lmbd}_metric_{name_ext}"
+                name_ext = f"_lambda_{f_lmbd}_metric_{name_ext}"
                 fair_enc = FairGCNAutoEncoder(**encoder_args)
                 fair_enc.load_state_dict(save_path=load_path, name_extension=name_ext, device='cpu')
                 net.encoder = deepcopy(fair_enc)

@@ -52,7 +52,6 @@ class MinMaxScaler(_BaseScaler):
         
         self.data_min = data_min
         self.data_max = data_max
-        #self.data_range = data_range
         
         return self
     

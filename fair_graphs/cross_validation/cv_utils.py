@@ -26,7 +26,6 @@ def get_all_cv_arguments(data: _GraphDataset):
                       'verbose': False}
     return encoder_args,model_fixed_args,model_cv_args,fit_funct_args
 
-
 def product_dict(**kwargs):
     keys = kwargs.keys()
     vals = kwargs.values()

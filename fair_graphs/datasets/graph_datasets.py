@@ -70,7 +70,7 @@ class _GraphDataset(data.Dataset):
         self.sensitive = self.sensitive[indices]
         self.labels = self.labels[indices]
         self.labels_msk = tr.arange(len(self.labels))
-        self.adj_mtx = self.adj_mtx[indices][:,indices]  
+        self.adj_mtx = self.adj_mtx[indices][:,indices]
         return self
     
     def set_labels_mask(self, indices):

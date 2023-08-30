@@ -242,3 +242,63 @@ def plot_best_fair_wrt_util_perc_acc_roc(plot_dict,
         axs[idx,1].grid(alpha=.5)
 
     fig.tight_layout()
+
+
+def tables_cumulative_plot(plot_dict,
+                           phase = 'test',
+                           folder_path = '',
+                           ):
+    aux_dict = {'german': {'c':'#78c679', 'fm':'D', 'nfm':'o', 'lbl':'German'},
+                'bail': {'c':'#41b6c4', 'fm':'D', 'nfm':'o', 'lbl':'Bail'},
+                'credit': {'c':'#bd0026', 'fm':'D', 'nfm':'o', 'lbl':'Credit'},
+                'pokec_z': {'c':'#8c96c6', 'fm':'D', 'nfm':'o', 'lbl':'Pokec'},
+                'facebook': {'c':'#006837', 'fm':'D', 'nfm':'o',  'lbl':'Facebook'},
+                'gplus': {'c':'#253494', 'fm':'D', 'nfm':'o', 'lbl':'Google Plus'},
+                'demographicParity': 'DDP',
+                'equalOpportunityPos': 'DEO$^+$',
+                'equalOpportunityNeg': 'DEO$^-$',
+                'counterfactual': 'CF',
+                }
+    
+    fig, axs = plt.subplots(2, len(plot_dict['metrics']), figsize=(15,7), sharey='row', sharex='col')
+    axs[0,0].set_ylabel('ACC', size=20)
+    axs[1,0].set_ylabel('AUROC', size=20)
+
+    for f_idx, fair_mtr in enumerate(plot_dict['metrics']):
+        axs[-1,f_idx].set_xlabel(aux_dict[fair_mtr], size=20)
+        axs[0,f_idx].grid(alpha=.5)
+        axs[1,f_idx].grid(alpha=.5)
+
+        for data in plot_dict['datasets']:
+            f_fp = os.path.join(folder_path, f'{data}_simple_multi_ours.pickle')
+            nf_fp = os.path.join(folder_path, f'{data}_simple_multi_nifty.pickle')
+            f_res = pickle.load(open(f_fp, 'rb'))
+            nf_res = pickle.load(open(nf_fp, 'rb'))
+            
+            for u_idx, util_mtr in enumerate(['accuracy', 'roc']):
+                if  data == 'gplus' and 'transductive' in folder_path:
+                    perc = 90
+                else:
+                    perc = 95
+                f_u_v = f_res[f"{perc}_{util_mtr}_min_{fair_mtr}"][f'mean_{phase}_{util_mtr}']
+                f_f_v = abs(f_res[f"{perc}_{util_mtr}_min_{fair_mtr}"][f'mean_{phase}_{fair_mtr}'])
+                axs[u_idx,f_idx].scatter(f_f_v,f_u_v, marker=aux_dict[data]['fm'],
+                                         #c = aux_dict[data]['c'],
+                                         linewidths = 3, facecolors='none',  edgecolors=aux_dict[data]['c'],
+                                         s=150, label=f"{aux_dict[data]['lbl']} - Ours")
+
+                nf_u_v = nf_res[f'95_{util_mtr}_min_{fair_mtr}'][f'mean_{phase}_{util_mtr}']
+                nf_f_v = abs(nf_res[f'95_{util_mtr}_min_{fair_mtr}'][f'mean_{phase}_{fair_mtr}'])
+                axs[u_idx,f_idx].scatter(nf_f_v,nf_u_v, marker=aux_dict[data]['nfm'],
+                                         #c = aux_dict[data]['c'],
+                                         linewidths = 2.5, facecolors='none',  edgecolors=aux_dict[data]['c'],
+                                         s=150, label=f"{aux_dict[data]['lbl']} - Nifty")
+
+                axs[u_idx,f_idx].tick_params(labelsize=15)
+
+                
+    axs[0,0].legend(fontsize=15, loc='upper center', bbox_to_anchor=(2.3, 1.4, 0, 0),
+                    ncols=len(plot_dict['datasets']),
+                    handletextpad=0, columnspacing=.7)
+
+    #fig.tight_layout()

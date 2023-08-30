@@ -31,9 +31,6 @@ def train_test_split_graph_data(dataset,
                                 train_size = None,
                                 random_state = None,
                                ):
-    # ----- Argument validation
-    # TODO
-    
     # ----- Instantiate train, test data and splitter utility
     tr_data, ts_data = deepcopy(dataset), deepcopy(dataset)
     splitter = ShuffleSplit(n_splits = 1,
@@ -217,7 +214,11 @@ def plot_cum_distributions_sunburst(graphs_data):
     aux_data = {'Bail':0,'Credit':0,'German':0,
                 'Pokec':1,'Facebook':1,'GooglePlus':1}
     
-    fig, axs = plt.subplots(5, len(graphs_data)//2, figsize=(15,16), gridspec_kw = {'height_ratios':[1,1,.1,1,1]})
+    fig, axs = plt.subplots(5, len(graphs_data)//2, figsize=(15,16), gridspec_kw = {'height_ratios':[1,1,.1,1,1],
+                                                                                    #'width_ratios':[0.05,0.05,0.05],
+                                                                                    #'wspace':0,
+                                                                                    #'hspace':0,
+                                                                                    })
 
     for j in range(len(graphs_data)//2):
         axs[2,j].axis('off')
@@ -237,9 +238,6 @@ def plot_cum_distributions_sunburst(graphs_data):
                 groups, smpls_groups = np.unique(graph_data.sensitive, return_counts=True)
                 msk_0, msk_1 = graph_data.sensitive==groups[0], graph_data.sensitive == groups[1]
                 
-                n_tot = len(graph_data)
-                n_neg, n_pos = smpls_classes[0], smpls_classes[1]
-                n_0, n_1 = smpls_groups[0], smpls_groups[1]
                 n_neg_0, n_neg_1 = (msk_0 & neg_msk).sum(), (msk_1 & neg_msk).sum()
                 n_pos_0, n_pos_1 = (msk_0 & pos_msk).sum(), (msk_1 & pos_msk).sum()
 
@@ -252,20 +250,21 @@ def plot_cum_distributions_sunburst(graphs_data):
                                                                         labelpad=25, size=20)
                     axs[r_idx*2+1+aux_data[name]*2][d_idx%3].yaxis.set_label_coords(-.2,-0.05)
                 groups = ['hetero','homo']
-                coo_edg = graph_data.adj_mtx.nonzero()
-                neg_coo_edg = graph_data.adj_mtx[neg_msk].nonzero()
-                pos_coo_edg = graph_data.adj_mtx[pos_msk].nonzero()
-                smpls_classes = [len(neg_coo_edg[0]), len(pos_coo_edg[0])]
-            
-                n_tot = len(coo_edg[0])
-                n_neg, n_pos = len(neg_coo_edg[0]), len(pos_coo_edg[0])
-                n_0 = (graph_data.sensitive[coo_edg[0]] != graph_data.sensitive[coo_edg[1]]).sum()
-                n_1 = (graph_data.sensitive[coo_edg[0]] == graph_data.sensitive[coo_edg[1]]).sum()
+                neg_coo_edg = graph_data.adj_mtx[neg_msk].nonzero()#(as_tuple=True)
+                pos_coo_edg = graph_data.adj_mtx[pos_msk].nonzero()#(as_tuple=True)
+                
                 n_neg_0 = (graph_data.sensitive[neg_coo_edg[0]] != graph_data.sensitive[neg_coo_edg[1]]).sum()
                 n_neg_1 = (graph_data.sensitive[neg_coo_edg[0]] == graph_data.sensitive[neg_coo_edg[1]]).sum()
+                n_neg = n_neg_0 + n_neg_1
+                n_neg_0 = smpls_classes[0]*n_neg_0/n_neg
+                n_neg_1 = smpls_classes[0]*n_neg_1/n_neg
                 n_pos_0 = (graph_data.sensitive[pos_coo_edg[0]] != graph_data.sensitive[pos_coo_edg[1]]).sum()
                 n_pos_1 = (graph_data.sensitive[pos_coo_edg[0]] == graph_data.sensitive[pos_coo_edg[1]]).sum()
+                n_pos = n_pos_0 + n_pos_1
+                n_pos_0 = smpls_classes[1]*n_pos_0/n_pos
+                n_pos_1 = smpls_classes[1]*n_pos_1/n_pos
 
+            #if r_idx==0:
             axs[r_idx*2+pos+aux_data[name]][d_idx%3].set_title(name, size=18)
 
             size = 0.5
@@ -282,5 +281,6 @@ def plot_cum_distributions_sunburst(graphs_data):
                     wedgeprops=dict(width=size, edgecolor='w'),
                     textprops={'fontsize': 15},
                     colors=[colors_dict[i][j] for i,j in [(0,0),(0,1),(1,1),(1,0)]])
-    
+            
     #fig.tight_layout()
+    #fig.subplots_adjust(wspace=0, hspace=0)

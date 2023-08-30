@@ -85,7 +85,7 @@ def main():
 
     datasets = [
         PokecData(sensitive_attribute='region', target_attribute='marital_status_indicator',
-                  include_sensitive=True, num_samples=10000, pre_scale_features=False),
+                  include_sensitive=True, num_samples=1000, pre_scale_features=False),
         FacebookData(sensitive_attribute='gender', target_attribute='egocircle',
                      include_sensitive=True, num_samples=0, pre_scale_features=False),
         GooglePlusData(sensitive_attribute='gender', target_attribute='egocircle',
@@ -102,17 +102,24 @@ def main():
     
     for data in datasets:
         print(f"\nDataset {data}")
+        num_samples, num_feat = data.samples.shape
 
         optim_fairAutoEncoder(num_splits = args.num_test_splits,
+                              num_samples = num_samples,
+                              num_feat = num_feat,
                               data = data,
                               lambdas = lambdas,
                               metric = 'dp')
         optim_fairAutoEncoder(num_splits = args.num_test_splits,
+                              num_samples = num_samples,
+                              num_feat = num_feat,
                               data = data,
                               lambdas = lambdas,
                               metric = 'eo',
                               pos = 0)
         optim_fairAutoEncoder(num_splits = args.num_test_splits,
+                              num_samples = num_samples,
+                              num_feat = num_feat,
                               data = data,
                               lambdas = lambdas,
                               metric = 'eo',
